@@ -387,22 +387,35 @@ window.addEventListener('keydown', (event) => {
     switch (event.key.toLowerCase()) {
         case 'w':
             if (player.isGrounded || player.jumps < player.maxJumps) {
+                player.isMoving = true;
                 player.jump(); // Use the jump method
                 player.setAnimation('jump'); // Change to jumping animation
             }
             break;
         case 'a':
+            if (!player.isGrounded) {
+                player.setAnimation('jump')
+                player.velocity.x = -movementSpeed;
+                player.isMoving = true;
+            } else {
             player.velocity.x = -movementSpeed;
             player.isMoving = true;
             player.setAnimation('run'); // Change to running animation
+            }
             break;
         case 's':
             player.velocity.y = fallSpeed;
             break;
         case 'd':
+            if (!player.isGrounded) {
+                player.setAnimation('jump')
+                player.velocity.x = movementSpeed;
+                player.isMoving = true;
+            } else {
             player.velocity.x = movementSpeed;
             player.isMoving = true;
             player.setAnimation('run'); // Change to running animation
+            }
             break;
         case ' ':
             player.attack();
@@ -416,25 +429,41 @@ window.addEventListener('keydown', (event) => {
 window.addEventListener('keyup', (event) => {
     switch (event.key.toLowerCase()) {
         case 'w':
+            if (!player.isGrounded) {
+                player.setAnimation("jump")
+            }
+            
         case 's':
+            if (!player.isGrounded) {
+                player.setAnimation("jump")
+            }
             // Reset the y velocity if the key released matches the jump or fall direction
             if (player.velocity.y === (event.key.toLowerCase() === 'w' ? jumpSpeed : fallSpeed)) {
                 player.velocity.y = 0;
             }
             break;
         case 'a':
+            if (!player.isGrounded) {
+                player.setAnimation("jump")
+            }
+            if (player.velocity.x === (event.key.toLowerCase() === 'a' ? movementSpeed : movementSpeed)) {
+                player.velocity.x = 0;
+                //player.isMoving = false; // Player is not moving anymore
+                //player.setAnimation('idle'); // Change back to idle animation
+            }
         case 'd':
+            if (!player.isGrounded) {
+                player.setAnimation("jump")
+            }
             // Reset the x velocity if the key released matches the horizontal direction
             if (player.velocity.x === (event.key.toLowerCase() === 'a' ? -movementSpeed : movementSpeed)) {
                 player.velocity.x = 0;
-                player.isMoving = false; // Player is not moving anymore
-                player.setAnimation('idle'); // Change back to idle animation
+               // player.isMoving = false; // Player is not moving anymore
+               // player.setAnimation('idle'); // Change back to idle animation
             }
             break;
     }
 });
-
-
 
 // Timer logic
 function startTimer() {
@@ -449,3 +478,16 @@ function startTimer() {
 }
 
 startTimer();
+
+function myLoopingTimer() {
+
+    if (player.velocity.y == 0 && player.isMoving == true && player.velocity.x == 0) {
+        player.isGrounded = true; // Player is grounded
+        player.jumps = 0; // Reset jump count when grounded
+        player.isMoving = false;
+}
+console.log('ya')
+}
+
+// Execute the function every 2000 milliseconds (2 seconds)
+setInterval(myLoopingTimer, 300);
