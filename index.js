@@ -226,7 +226,8 @@ class Fighter extends Sprite {
         this.isAttacking = true;
         setTimeout(() => {
             this.isAttacking = false;
-        }, 100); // Attack lasts for 100ms
+            this.setAnimation('idle'); // Switch back to idle after attack finishes
+        }, this.framesHold * this.framesMax * 16.67);
     }
 }
 
@@ -281,6 +282,10 @@ const player = new Fighter({
             imageSrc: './img/Martial Hero 2/Sprites/Fall.png',
             framesMax: 2
         },
+        attack: {
+            imageSrc: './img/Martial Hero 2/Sprites/Attack1.png',
+            framesMax: 4,
+        }
     },
     imageSrc: './img/Martial Hero 2/Sprites/Idle.png',
     framesMax: 4,
@@ -351,9 +356,23 @@ function animate(currentTime) {
     drawHealthBar(enemyHealth, canvas.width - healthBarWidth - 10, true);
     drawTimer();
 
-    // Handle the player's idle state when no movement keys are pressed
-    if (!player.isMoving) {
-        player.setAnimation('idle'); // Change to idle animation
+    // Attack animation priority: do not interrupt it with other animations
+    if (player.isAttacking) {
+        player.setAnimation('attack'); // Ensure attack animation is playing
+        if (player.framesCurrent === player.framesMax - 1) {
+            player.isAttacking = false; // Reset attack state when animation is complete
+        }
+    } else {
+        // Handle animations based on player's state only if not attacking
+        if (player.velocity.y < 0) {
+            player.setAnimation('jump');
+        } else if (!player.isGrounded) {
+            player.setAnimation('fall');
+        } else if (player.isMoving) {
+            player.setAnimation('run');
+        } else {
+            player.setAnimation('idle');
+        }
     }
 
     // Handle collision detection and apply damage
@@ -361,7 +380,7 @@ function animate(currentTime) {
         player.attackBox.position.x + player.attackBox.width > enemy.position.x &&
         player.attackBox.position.y < enemy.position.y + enemy.height &&
         player.attackBox.position.y + player.attackBox.height > enemy.position.y) {
-        player.isAttacking = false;
+        player.isAttacking = false; // Stop attacking after collision
         enemyHealth -= 10 * animationSpeed; // Scale damage by animationSpeed
         console.log('Player: collision detected');
     }
@@ -370,11 +389,12 @@ function animate(currentTime) {
         enemy.attackBox.position.x + enemy.attackBox.width > player.position.x &&
         enemy.attackBox.position.y < player.position.y + player.height &&
         enemy.attackBox.position.y + enemy.attackBox.height > player.position.y) {
-        enemy.isAttacking = false;
+        enemy.isAttacking = false; // Stop attacking after collision
         playerHealth -= 10 * animationSpeed; // Scale damage by animationSpeed
         console.log('Enemy: collision detected');
     }
 }
+
 
 
 animate();
@@ -406,6 +426,7 @@ window.addEventListener('keydown', (event) => {
             break;
         case ' ':
             player.attack();
+            player.setAnimation('attack');
             break;
         case 'enter':
             enemy.attack();
