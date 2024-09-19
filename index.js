@@ -140,7 +140,14 @@ class Fighter extends Sprite {
         scale = 1, 
         framesMax = 1, 
         framesHold = 5,
-        sprites }) {
+        sprites,
+        attackBoxOffset = { x: 0, y: 0 },
+        attackBoxWidth = 0, 
+        attackBoxHeight = 0,
+        debugOutlineOffsetX = 0, 
+        debugOutlineOffsetY = 0, 
+        debugOutlineWidth = 0,   
+        debugOutlineHeight = 0 }) {
         super({
             position,
             imageSrc,
@@ -156,9 +163,9 @@ class Fighter extends Sprite {
                 x: this.position.x,
                 y: this.position.y
             },
-            offset: offset,
-            width: 100,
-            height: 50,
+            offset: attackBoxOffset,
+            width: attackBoxWidth,
+            height: attackBoxHeight,
         };
         this.color = color;
         this.isAttacking = false;
@@ -173,6 +180,11 @@ class Fighter extends Sprite {
             sprites[sprite].image = new Image();
             sprites[sprite].image.src = sprites[sprite].imageSrc;
         }
+
+        this.debugOutlineOffsetX = debugOutlineOffsetX;
+        this.debugOutlineOffsetY = debugOutlineOffsetY;
+        this.debugOutLineWidth = -debugOutlineWidth;
+        this.debugOutlineHeight = -debugOutlineHeight;
     }
 
     setAnimation(animation) {
@@ -183,6 +195,28 @@ class Fighter extends Sprite {
             this.framesCurrent = 0; // Reset frames
             this.framesElapsed = 0; // Reset frames elapsed
         }
+    }
+
+    drawOutline() {
+        c.strokeStyle = 'rgba(0, 255, 0, 0.5)'; // Color of the outline (green with opacity)
+        c.lineWidth = 2; // Width of the rectangle border
+        c.strokeRect(
+            this.position.x - this.offset.x + this.debugOutlineOffsetX,
+            this.position.y - this.offset.y + this.debugOutlineOffsetY,
+            this.width * this.scale + this.debugOutLineWidth,
+            this.height * this.scale + this.debugOutlineHeight,
+        );
+    }
+
+    drawAttackBox() {
+        c.strokeStyle = 'rgba(255, 0, 0, 0.5)'; // Color of the hitbox outline (red with opacity)
+        c.lineWidth = 2; // Width of the rectangle border
+        c.strokeRect(
+            this.attackBox.position.x - this.offset.x,
+            this.attackBox.position.y - this.offset.y,
+            this.attackBox.width,
+            this.attackBox.height
+        );
     }
 
     update() {
@@ -213,6 +247,8 @@ class Fighter extends Sprite {
         } else if (this.position.x + this.width > canvas.width) {
             this.position.x = canvas.width - this.width; // Prevent going past the right boundary
         }
+        this.drawOutline();
+        this.drawAttackBox();
     }
 
     jump() {
@@ -265,6 +301,13 @@ const player = new Fighter({
         x: 215,
         y: 170,
     },
+    attackBoxOffset: { x: 250, y: 170 },
+    attackBoxWidth: 210,
+    attackBoxHeight: 150,
+    debugOutlineOffsetX: 235, // Specific outline offset X for the player
+    debugOutlineOffsetY: 180, // Specific outline offset Y for the player
+    debugOutlineWidth: 75,  // Specific outline width for the player
+    debugOutlineHeight: 235,
     sprites: {
         idle: {
             imageSrc: './img/Martial Hero 2/Sprites/Idle.png',
@@ -296,7 +339,7 @@ const player = new Fighter({
 
 const enemy = new Fighter({
     position: {
-        x: canvas.width - 60, // Adjust to avoid overlap with health bar
+        x: 945,
         y: 50,
     },
     velocity: {
@@ -304,28 +347,39 @@ const enemy = new Fighter({
         y: 0,
     },
     offset: {
-        x: -50,
-        y: 0,
+        x: 215,
+        y: 170,
     },
+    attackBoxOffset: { x: 40, y: 170 },
+    attackBoxWidth: 210,
+    attackBoxHeight: 150,
+    debugOutlineOffsetX: 215, // Different outline offset X for the enemy
+    debugOutlineOffsetY: 180, // Different outline offset Y for the enemy
+    debugOutlineWidth: 75,  // Different outline width for the enemy
+    debugOutlineHeight: 235,
     sprites: {
         idle: {
-            imageSrc: './img/Martial Hero 2/Idle.png', // Replace with actual enemy sprite paths
+            imageSrc: './img/Enemy/Sprites/Idle.png',
             framesMax: 4
         },
         run: {
-            imageSrc: './img/Martial Hero 2/Run.png', // Replace with actual enemy sprite paths
+            imageSrc: './img/Enemy/Sprites/Run.png',
             framesMax: 8
         },
         jump: {
-            imageSrc: './img/Martial Hero 2/Jump.png', // Replace with actual enemy sprite paths
+            imageSrc: './img/Enemy/Sprites/Jump.png',
+            framesMax: 2 // Ensure this is correctly set
+        },
+        fall: {  // Add fall animation
+            imageSrc: './img/Enemy/Sprites/Fall.png',
             framesMax: 2
         },
-        fall: {
-            imageSrc: './img/Martial Hero 2/Fall.png', // Replace with actual enemy sprite paths
-            framesMax: 2
+        attack: {
+            imageSrc: './img/Enemy/Sprites/Attack1.png',
+            framesMax: 4,
         }
     },
-    imageSrc: './img/Martial Hero 2/Idle.png', // Initial image for idle animation
+    imageSrc: './img/Enemy/Sprites/Idle.png',
     framesMax: 4,
     framesHold: 20,
     scale: 2.5,
@@ -375,23 +429,22 @@ function animate(currentTime) {
         }
     }
 
-    // Handle collision detection and apply damage
-    if (player.isAttacking && player.attackBox.position.x < enemy.position.x + enemy.width &&
-        player.attackBox.position.x + player.attackBox.width > enemy.position.x &&
-        player.attackBox.position.y < enemy.position.y + enemy.height &&
-        player.attackBox.position.y + player.attackBox.height > enemy.position.y) {
-        player.isAttacking = false; // Stop attacking after collision
-        enemyHealth -= 10 * animationSpeed; // Scale damage by animationSpeed
-        console.log('Player: collision detected');
-    }
-
-    if (enemy.isAttacking && enemy.attackBox.position.x < player.position.x + player.width &&
-        enemy.attackBox.position.x + enemy.attackBox.width > player.position.x &&
-        enemy.attackBox.position.y < player.position.y + player.height &&
-        enemy.attackBox.position.y + enemy.attackBox.height > player.position.y) {
-        enemy.isAttacking = false; // Stop attacking after collision
-        playerHealth -= 10 * animationSpeed; // Scale damage by animationSpeed
-        console.log('Enemy: collision detected');
+    // Handle animations for the enemy
+    if (enemy.isAttacking) {
+        enemy.setAnimation('attack');
+        if (enemy.framesCurrent === enemy.framesMax - 1) {
+            enemy.isAttacking = false; // Reset attack state when animation is complete
+        }
+    } else {
+        if (enemy.velocity.y < 0) {
+            enemy.setAnimation('jump');
+        } else if (!enemy.isGrounded) {
+            enemy.setAnimation('fall');
+        } else if (enemy.isMoving) {
+            enemy.setAnimation('run');
+        } else {
+            enemy.setAnimation('idle');
+        }
     }
 }
 
@@ -431,6 +484,27 @@ window.addEventListener('keydown', (event) => {
         case 'enter':
             enemy.attack();
             break;
+            case 'arrowup':
+            if (enemy.isGrounded || enemy.jumps < enemy.maxJumps) {
+                enemy.jump(); // Use the jump method
+                enemy.setAnimation('jump'); // Change to jumping animation
+            }
+            break;
+
+        // enemy movement    
+        case 'arrowleft':
+            enemy.velocity.x = -movementSpeed;
+            enemy.isMoving = true;
+            enemy.setAnimation('run'); // Change to running animation
+            break;
+        case 'arrowdown':
+            enemy.velocity.y = fallSpeed;
+            break;
+        case 'arrowright':
+            enemy.velocity.x = movementSpeed;
+            enemy.isMoving = true;
+            enemy.setAnimation('run'); // Change to running animation
+            break;
     }
 });
 
@@ -450,6 +524,22 @@ window.addEventListener('keyup', (event) => {
                 player.velocity.x = 0;
                 player.isMoving = false; // Player is not moving anymore
                 player.setAnimation('idle'); // Change back to idle animation
+            }
+            break;
+
+        // Enemy key release handling (arrow keys)
+        case 'arrowup':
+        case 'arrowdown':
+            if (enemy.velocity.y === (event.key.toLowerCase() === 'arrowup' ? jumpSpeed : fallSpeed)) {
+                enemy.velocity.y = 0;
+            }
+            break;
+        case 'arrowleft':
+        case 'arrowright':
+            if (enemy.velocity.x === (event.key.toLowerCase() === 'arrowleft' ? -movementSpeed : movementSpeed)) {
+                enemy.velocity.x = 0;
+                enemy.isMoving = false; // Enemy is not moving anymore
+                enemy.setAnimation('idle'); // Change back to idle animation
             }
             break;
     }
